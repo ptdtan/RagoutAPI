@@ -1,8 +1,10 @@
 import os
 from setuptools import *
 
+class BinaryMissingException(Exception):
+    pass
 if not os.path.isfile("lib/ragout-maf2synteny") or not os.path.isfile("lib/ragout-overlap"):
-    raise Exception("Maf2synteny bin doesn't exists, please run make first")
+    raise BinaryMissingException("Maf2synteny bin doesn't exists, please run make first")
 setup(name='RagoutAPI',
       version='0.1',
       description='API from Ragout for ancestor sequences reconstruction',
