@@ -20,7 +20,7 @@ ifeq (${CXX},)
 endif
 
 #adding necessary flags
-CXXFLAGS += -std=c++0x
+CXXFLAGS += -std=c++0x -fPIC
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),Darwin)
 	CXXFLAGS += -stdlib=libc++
