@@ -25,8 +25,6 @@ from ragout.breakpoint_graph.inferer import Adjacency
 
 logger = logging.getLogger()
 debugger = DebugConfig.get_instance()
-debugger.set_debugging(True)
-debugger.set_debug_dir("./debug_scf")
 
 def merge_scaffolds(big_scaffolds, small_scaffolds, perm_container, rearrange, ancestral = False):
     """

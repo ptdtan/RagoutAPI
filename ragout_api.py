@@ -49,7 +49,6 @@ class RagoutInstance(object):
                  phyloStr=None,
                  outDir="ragout-out",
                  scale="large",
-                 tmpDir="tmp",
                  outLog="ragout-log.txt",
                  backend="maf",
                  is_overwrite = False,
@@ -68,11 +67,6 @@ class RagoutInstance(object):
         self.backend = SyntenyBackend.backends[backend]
         self.overwrite = is_overwrite
         self.threads = threads
-        if not tmpDir:
-            self.tmpDir = os.path.join(outDir, "tmp")
-        else:
-            self.tmpDir = tmpDir
-
         self.phyloStr = phyloStr
         self.logger = enable_logging(outLog, is_debug)
         self.debugger = DebugConfig.get_instance()
@@ -81,8 +75,6 @@ class RagoutInstance(object):
 
         if not os.path.isdir(self.outDir):
             os.mkdir(self.outDir)
-        if not os.path.isdir(self.tmpDir):
-            os.mkdir(self.tmpDir)
         self.debug_root = self._set_debugging()
         self._set_exe_paths()
         self._check_extern_modules(backend)
@@ -138,12 +130,6 @@ class RagoutInstance(object):
         out_gen.make_output(self.outDir, self.ancestor, write_fasta=False)
 
     def _set_debugging(self):
-        if not os.path.isdir(self.outDir):
-            os.mkdir(self.outDir)
-
-        if not os.path.isdir(self.tmpDir):
-            os.mkdir(self.tmpDir)
-
         debug_root = os.path.join(self.outDir, "debug")
         self.debugger.set_debugging(self.debug)
         self.debugger.set_debug_dir(debug_root)
