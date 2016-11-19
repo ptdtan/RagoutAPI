@@ -1,5 +1,35 @@
-Ragout
+Ragout (with API)
 ======
+
+
+##	Install
+
+```bash
+cd RagoutAPI
+make
+python setup.py install
+```
+
+## API Usage
+
+```python
+from ragout import ragout_api as api
+ragoutInstance = api.RagoutInstance(maf="/path/to/maf/file",
+									references=["Human", "Marmoset", "B"], #actually leave nodes
+                                    ancestor="A",
+                                    ancestor_fasta="/path/to/ancestor/fasta/file",
+                                    threads=4,
+                                    outDir="/output/directory",
+                                    scale="small", #synteny block scale, "small" or "large"
+                                    )
+ragoutInstance._construct_ancestor() #reconstruct the ancestor sequence
+```
+
+##	API test
+
+```
+python ./RagoutAPI/test_api.py
+```
 
 Version: 2.0b
 
