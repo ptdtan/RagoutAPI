@@ -10,12 +10,6 @@ import argparse
 from collections import namedtuple
 from copy import deepcopy
 
-ragout_root = os.path.dirname(os.path.realpath(__file__))
-lib_absolute = os.path.join(ragout_root, "lib")
-sys.path.insert(0, lib_absolute)
-sys.path.insert(0, ragout_root)
-os.environ["PATH"] = lib_absolute + os.pathsep + os.environ["PATH"]
-
 import ragout.assembly_graph.assembly_refine as asref
 import ragout.scaffolder.scaffolder as scfldr
 import ragout.scaffolder.merge_iters as merge
@@ -48,57 +42,44 @@ RunStage = namedtuple("RunStage", ["name", "block_size", "ref_indels",
 
 class RagoutInstance(object):
     """
-    Raogut instance for handling reconstruction methods
+    Ragout instance for handling reconstruction methods
     """
-    def __init__(self,maf, references, ancestor, ancestor_fasta,
+    def __init__(self, maf, ancestor, ancestor_fasta, phylo,
                  threads=4,
-                 phyloStr=None,
-                 outDir="ragout-out",
+                 outDir="ragout_out",
                  scale="large",
-                 tmpDir="tmp",
-                 outLog="ragout-log.txt",
-                 backend="maf",
-                 is_overwrite = False,
-                 is_debug=False,
+                 outLog="ragout_log",
+                 is_overwrite = True,
+                 is_debug = True,
                  is_resolve_repeats=False,
                  is_solid_scaffolds=False):
         self.maf = maf
         self.ancestor = ancestor
         self.ancestor_seqs = read_fasta_dict(ancestor_fasta)
-        self.references = references
-        self.target = references[0]
-        self.phyloStr = phyloStr
         self.scale = scale
         self.debug = is_debug
-        self.outDir = outDir
-        self.backend = SyntenyBackend.backends[backend]
+        self.outDir = "_".join([outDir, ancestor])
+        self.backend = SyntenyBackend.backends["maf"]
         self.overwrite = is_overwrite
         self.threads = threads
-        if not tmpDir:
-            self.tmpDir = os.path.join(outDir, "tmp")
-        else:
-            self.tmpDir = tmpDir
-
-        self.phyloStr = phyloStr
-        self.logger = enable_logging(outLog, is_debug)
+        self.logger = enable_logging("_".join([outLog, ancestor]), is_debug)
         self.debugger = DebugConfig.get_instance()
         self.is_solid_scaffolds = is_solid_scaffolds
         self.is_resolve_repeats = is_resolve_repeats
+        self.synteny_blocks = config.vals["blocks"][self.scale]
 
         if not os.path.isdir(self.outDir):
             os.mkdir(self.outDir)
-        if not os.path.isdir(self.tmpDir):
-            os.mkdir(self.tmpDir)
-        self.debug_root = self._set_debugging()
-        self._set_exe_paths()
-        self._check_extern_modules(backend)
-        self.phylogeny, self.naming_ref = self._get_phylogeny_and_naming_ref()
-        self.synteny_blocks = config.vals["blocks"][self.scale]
-        self.dummy_recipe = _make_dummy_recipe(self.references, self.target, self.ancestor, self.phyloStr, self.scale, self.maf, self.naming_ref)
-        self.perm_files = self._make_permutaion_files()
-        self.run_stages = self.make_run_stages()
-        self.phylo_perm_file = self.perm_files[self.synteny_blocks[-1]]
+
+        self._set_debugging()
+        self._check_extern_modules()
+        self._get_phylogeny_and_naming_ref(phylo)
+        self._make_recipe(phylo)
+        self._make_permutaion_files()
+        self._make_run_stages()
         self._make_stage_perms()
+        pass
+
     def _construct_ancestor(self):
 
         ###Enable ChimeraDetector4Ancestor
@@ -110,7 +91,8 @@ class RagoutInstance(object):
 
         prev_stages = []
         scaffolds = None
-        ###apply for all stages
+
+        ###Iterative scaffolding
         last_stage = self.run_stages[-1]
         for stage in self.run_stages:
             logger.info("Stage \"{0}\"".format(stage.name))
@@ -138,66 +120,60 @@ class RagoutInstance(object):
                 scaffolds = cur_scaffolds
         scfldr.assign_scaffold_names(scaffolds, self.stage_perms[last_stage], self.naming_ref)
 
-        ###output generating of ancestor scaffolds
+        ###Output generating of ancestor scaffolds
         logger.info("Done scaffolding for ''{0}''".format(self.ancestor))
         out_gen = OutputGenerator(self.ancestor_seqs, scaffolds)
         out_gen.make_output(self.outDir, self.ancestor, write_fasta=False)
-
-    def _set_debugging(self):
-        if not os.path.isdir(self.outDir):
-            os.mkdir(self.outDir)
-
-        if not os.path.isdir(self.tmpDir):
-            os.mkdir(self.tmpDir)
-
-        debug_root = os.path.join(self.outDir, "debug")
-        self.debugger.set_debugging(self.debug)
-        self.debugger.set_debug_dir(debug_root)
-        self.debugger.clear_debug_dir()
-        return debug_root
-
-    def _set_exe_paths(self, LIB_DIR="lib"):
-        ragout_root = os.path.dirname(os.path.realpath(__file__))
-        lib_absolute = os.path.join(ragout_root, LIB_DIR)
-        sys.path.insert(0, lib_absolute)
-        sys.path.insert(0, ragout_root)
-        os.environ["PATH"] = lib_absolute + os.pathsep + os.environ["PATH"]
         pass
 
-    def _check_extern_modules(self, backend):
+    def _set_debugging(self):
+        """
+        Set debugging config
+        """
+        self.debug_root = os.path.join(self.outDir, "_   debug")
+        self.debugger.set_debugging(self.debug)
+        self.debugger.set_debug_dir(self.debug_root)
+        self.debugger.clear_debug_dir()
+        pass
+
+    def _check_extern_modules(self):
         """
         Checks if all necessary native modules are available
         """
-
         if not m2s.check_binary():
             raise BackendException("maf2synteny binary is missing, "
                                    "did you run 'make'?")
-
         if not overlap.check_binary():
             raise BackendException("overlap binary is missing, "
                                    "did you run 'make'?")
         pass
 
-    def _get_phylogeny_and_naming_ref(self):
+    def _get_phylogeny_and_naming_ref(self, phyloStr):
         """
         Retrieves phylogeny (infers if necessary) as well as
         naming reference genome
         """
-        if self.phyloStr:
+        if phyloStr:
             logger.info("Phylogeny is taken from parameters")
-            phylogeny = Phylogeny.from_newick(self.phyloStr)
+            self.phylogeny = Phylogeny.from_newick(phyloStr)
+            if len(self.phylogeny.tree.get_leaves_identifiers()) !=3:
+                raise Exception("The API only support for 3-leaves phylogeny tree")
         else:
             raise Exception("Phylogeny tree must be supplied!")
-            logger.info(phylogeny.tree_string)
-        leaves_sorted = phylogeny.nodes_by_distance(self.target, onlyLeaves=True)
-        naming_ref = leaves_sorted[0]
-        logger.info("'{0}' is chosen as a naming reference".format(naming_ref))
-
-        return phylogeny, naming_ref
+        logger.info(self.phylogeny.tree_string)
+        self.references = self.phylogeny.tree.get_leaves_identifiers()
+        self.target = self.references[0]
+        leaves_sorted = self.phylogeny.nodes_by_distance(self.target, onlyLeaves=True)
+        self.naming_ref = leaves_sorted[0]
+        logger.info("'{0}' is chosen as a naming reference".format(self.naming_ref))
+        pass
 
     def _make_permutaion_files(self):
-        return self.backend.make_permutations(self.dummy_recipe, self.synteny_blocks, self.outDir,
-                                               self.overwrite, self.threads)
+        """
+        Run maf2synteny to make permutation files from maf alignment
+        """
+        self.perm_files = self.backend.make_permutations(self.dummy_recipe, self.synteny_blocks, self.outDir, self.overwrite, self.threads)
+        pass
 
     def _make_stage_perms(self):
         self.stage_perms = {}
@@ -208,19 +184,26 @@ class RagoutInstance(object):
                                                       stage.ref_indels, self.phylogeny)
             pass
 
-    def make_run_stages(self):
+    def _make_run_stages(self):
         """
         Setting parameters of run stages
         """
-        stages = []
+        self.run_stages = []
         for block in self.synteny_blocks:
-            stages.append(RunStage(name=str(block), block_size=block,
+            self.run_stages.append(RunStage(name=str(block), block_size=block,
                                    ref_indels=False, repeats=False,
                                    rearrange=True))
-        stages.append(RunStage(name="refine", block_size=self.synteny_blocks[-1],
+        self.run_stages.append(RunStage(name="refine", block_size=self.synteny_blocks[-1],
                                ref_indels=False, repeats=self.is_resolve_repeats,
                                rearrange=False))
-        return stages
+        pass
+
+    def _make_recipe(self, phylo):
+        """
+        Make a dummy recipe to fit Ragout logic
+        """
+        self.dummy_recipe = _make_dummy_recipe(self.references, self.target, self.ancestor, phylo, self.scale, self.maf, self.naming_ref)
+        pass
 
 def enable_logging(log_file, debug):
     """
