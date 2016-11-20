@@ -17,7 +17,7 @@ from ragout import ragout_api as api
 ragoutInstance = api.RagoutInstance(maf="/path/to/maf/file",
                                     ancestor="A",
                                     ancestor_fasta="/path/to/ancestor/fasta/file",
-				    phylo="((Human:0.057804,Marmoset:0.04965)A:0.088104,B:0.064051)C;",
+				    	phylo="((Human:0.057804,Marmoset:0.04965)A:0.088104,B:0.064051)C;",
                                     outDir="/output/directory",
                                     )
 ragoutInstance._construct_ancestor() #reconstruct the ancestor sequence
