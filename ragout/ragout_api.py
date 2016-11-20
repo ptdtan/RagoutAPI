@@ -45,7 +45,6 @@ class RagoutInstance(object):
     Ragout instance for handling reconstruction methods
     """
     def __init__(self, maf, ancestor, ancestor_fasta, phylo,
-                 threads=4,
                  outDir="ragout_out",
                  scale="large",
                  outLog="ragout_log",
@@ -61,7 +60,6 @@ class RagoutInstance(object):
         self.outDir = "_".join([outDir, ancestor])
         self.backend = SyntenyBackend.backends["maf"]
         self.overwrite = is_overwrite
-        self.threads = threads
         self.logger = enable_logging("_".join([outLog, ancestor]), is_debug)
         self.debugger = DebugConfig.get_instance()
         self.is_solid_scaffolds = is_solid_scaffolds
@@ -172,7 +170,7 @@ class RagoutInstance(object):
         """
         Run maf2synteny to make permutation files from maf alignment
         """
-        self.perm_files = self.backend.make_permutations(self.dummy_recipe, self.synteny_blocks, self.outDir, self.overwrite, self.threads)
+        self.perm_files = self.backend.make_permutations(self.dummy_recipe, self.synteny_blocks, self.outDir, self.overwrite)
         pass
 
     def _make_stage_perms(self):

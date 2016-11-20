@@ -18,7 +18,7 @@ ragoutInstance = api.RagoutInstance(maf="/path/to/maf/file",
 									references=["Human", "Marmoset", "B"], #actually leave nodes
                                     ancestor="A",
                                     ancestor_fasta="/path/to/ancestor/fasta/file",
-					phyloStr="((Human:0.057804,Marmoset:0.04965)A:0.088104,B:0.064051)C;",
+																		phylo="((Human:0.057804,Marmoset:0.04965)A:0.088104,B:0.064051)C;",
                                     threads=4,
                                     outDir="/output/directory",
                                     scale="small", #synteny block scale, "small" or "large"
@@ -53,7 +53,7 @@ Website: http://fenderglass.github.io/Ragout/
 Description
 -----------
 Ragout (Reference-Assisted Genome Ordering UTility)
-is a tool for reference-assisted assembly. Given a set of initial sequences 
+is a tool for reference-assisted assembly. Given a set of initial sequences
 (contigs/scaffolds) and one or multiple references (complete or draft) as input
 it produces a chromosome-scaled assembly (as a set of gapped scaffolds).
 
@@ -87,7 +87,7 @@ Authors
 
 Citation
 --------
-- Mikhail Kolmogorov, Brian Raney, Benedict Paten, and Son Pham. 
+- Mikhail Kolmogorov, Brian Raney, Benedict Paten, and Son Pham.
 "Ragout: A reference-assisted assembly tool for bacterial genomes",
 Bioinformatics, 2014
 

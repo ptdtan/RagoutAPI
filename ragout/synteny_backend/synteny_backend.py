@@ -25,7 +25,7 @@ class SyntenyBackend:
         pass
 
     def make_permutations(self, recipe, blocks,
-                          output_dir, overwrite, threads):
+                          output_dir, overwrite, threads=4):
         """
         Runs backend and then prepare data for futher processing
         """
