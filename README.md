@@ -15,13 +15,10 @@ python setup.py install
 ```python
 from ragout import ragout_api as api
 ragoutInstance = api.RagoutInstance(maf="/path/to/maf/file",
-									references=["Human", "Marmoset", "B"], #actually leave nodes
                                     ancestor="A",
                                     ancestor_fasta="/path/to/ancestor/fasta/file",
 																		phylo="((Human:0.057804,Marmoset:0.04965)A:0.088104,B:0.064051)C;",
-                                    threads=4,
                                     outDir="/output/directory",
-                                    scale="small", #synteny block scale, "small" or "large"
                                     )
 ragoutInstance._construct_ancestor() #reconstruct the ancestor sequence
 ```
